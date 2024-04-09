@@ -1,0 +1,5 @@
+Esta línea va a test.txt
+Traceback (most recent call last):
+  File "/home/vicente/computacion2/compu2/Clase2_26-03/redireccion.py", line 16, in <module>
+    sys.Popen('ccc')
+AttributeError: module 'sys' has no attribute 'Popen'
