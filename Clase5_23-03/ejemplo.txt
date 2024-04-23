@@ -1,0 +1,6 @@
+sleep 9999 & #se manda a segundo plano y muestra el pid
+ps aux | grep sleep #se muestran los procesos sleep
+fg #se ven los procesos de la terminal
+kill -(señal) (pid) #manda señales 
+echo $? #terminacion del anterior proceso
+man 7 signal #man donde se muestran todas las señales
