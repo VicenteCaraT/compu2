@@ -7,9 +7,10 @@ pipe_r_hijo, pipe_w_padre = os.pipe()  # comunicacion del hijo al padre (hijo es
 pid = os.fork()
 
 if pid > 0:
-    os.close(pipe_r_padre)  # cierra lectura del padre
-    os.close(pipe_w_padre)  # cierra escritura del padre
+    os.close(pipe_r_padre) 
+    os.close(pipe_w_padre)  
 
+    #Utilizando os.fdopen(), los descriptores de archivo se convierten en objetos de archivo de Python.
     pipe_w_hijo = os.fdopen(pipe_w_hijo, 'w')
     pipe_r_hijo = os.fdopen(pipe_r_hijo)
 

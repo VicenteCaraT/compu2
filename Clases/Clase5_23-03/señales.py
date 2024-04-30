@@ -11,7 +11,7 @@ def enviar_sig(pid, sig):
         print("Error: Permiso denegado.")
 
 # Ejemplo de uso
-pid = 36521  # Reemplazar con el PID real del proceso
+pid = 47583  # Reemplazar con el PID real del proceso (sleep -time &)
 sig = signal.SIGTERM  # Señal para terminar el proceso
 
 enviar_sig(pid, sig)

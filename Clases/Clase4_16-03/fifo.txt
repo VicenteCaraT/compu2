@@ -1,0 +1,15 @@
+- ¿Qué es un fifo?
+tipo de archivo especial en sistemas operativos Unix/Linux que se utiliza para la comunicación entre procesos.
+Actúa como un conducto, permitiendo que los datos fluyan de un proceso a otro de forma unidireccional. 
+
+- Creacion de Fifo por consola:
+mkfifo /path_to/my_fifo
+
+- Escritura y Lectura en la Fifo
+Los FIFOs se utilizan con operaciones estándar de lectura y escritura. Un proceso escribe datos en el FIFO 
+utilizando la syscall (llamada al sistema) write() y otro proceso puede leer estos datos utilizando read().
+
+- Consideraciones Importantes:
+Bloqueo (FIFOs bloquean la ejecución hasta que ambos extremos están conectados)
+Sincronización(los Fifos no son adecuados cuando se requiere concurrencia entre procesos)
+Seguridad (permisos de acceso a la Fifo)

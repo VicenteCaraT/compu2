@@ -1,0 +1,21 @@
+- ¿Qué son las señales?
+Son mensajes que se envían a un proceso para indicarle que debe prestar atención 
+a un evento específico, como una interrupción de hardware, un error grave de software, o una acción del usuario.
+
+- Propósito de las señales :
+son utilizadas por el sistema operativo para comunicar a los procesos la ocurrencia de eventos que los afectan directamente. 
+Interrupciones del usuario.
+Notificaciones de terminación de otros procesos.
+Alertas de recursos limitados o fallos del hardware.
+
+- Caracterísiticas :
+Asincrónicas (pueden llegar en cualquier momento)
+Simples (solo lleva su identificador)
+Limitadas
+
+- Llamadas de sistemas : 
+son funciones proporcionadas por el núcleo del sistema operativo que permiten a los programas en espacio de usuario solicitar algún servicio del sistema operativo. 
+
+- Envío de señales en python:
+Python proporciona una interfaz de alto nivel para trabajar con señales 
+a través del módulo signal y la función os.kill.

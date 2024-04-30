@@ -1,0 +1,39 @@
+Permiten la comunicación y el paso de información entre procesos.
+
+- ¿Qúe es un pipe?
+Un pipe es un canal de comunicación unidireccional que conecta la salida estándar (stdout) 
+de un proceso con la entrada estándar (stdin) de otro. Esto permite que los programas se comuniquen 
+entre sí sin necesidad de escribir o leer desde el sistema de archivos.
+
+- Descriptores de Archivo (fd):
+Cada proceso en un sistema Unix-like tiene asociado un conjunto de descriptores de archivos 
+que apuntan a archivos, dispositivos o pipes. Los descriptores de archivos 0, 1 y 2 
+están reservados para la entrada estándar, la salida estándar y el error estándar, respectivamente. 
+Cuando se crea un pipe, el sistema operativo proporciona un par de descriptores de archivos: 
+uno para leer del pipe y otro para escribir en él.
+
+- Pipes en python (os.pipe()):
+es una función en Python que invoca la llamada al sistema pipe() disponible en 
+sistemas operativos tipo Unix. La función pipe() crea un canal de comunicación unidireccional 
+que puede ser utilizado para que los procesos se envíen datos entre sí. 
+Este canal está implementado en el sistema operativo como un buffer de tamaño limitado.
+
+- Como funciona os.pipe():
+Cuando se llama a os.pipe(), se devuelven dos descriptores de archivo:
+
+El primero (r) se utiliza para leer los datos que se envían a través del pipe.
+El segundo (w) se utiliza para escribir datos en el pipe.
+
+Estos descriptores de archivo pueden ser utilizados directamente con otras llamadas al sistema, 
+como os.read() y os.write(), o pueden ser encapsulados en objetos de archivo de Python utilizando 
+os.fdopen() para facilitar la lectura y escritura de datos de alto nivel.
+
+- Importante
+Buffer de Tamaño Limitado
+Uso de os.close() para cerrar descriptores adecuados para un mejor manejo re recusos
+Comunicación Unidireccional
+
+- Porqué el uso de os.close()
+Prevención de Deadlocks (ocurre cuando ambos procesos esperan indefinidamente por una accion del otro)
+Señalización de Fin de Archivo (EOF)
+Manejo Correcto de Recursos

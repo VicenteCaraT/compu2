@@ -1,10 +1,10 @@
 import os
 
-fifo_path = "/tmp/my_fifo"
+fifo_path = '/tmp/my_fifo'
 
-#with open(fifo_path, 'r') as fifo:
-#    message = fifo.read()
-#    print(f"Mensaje FIFO: {message}")
+# Crear el FIFO si no existe
+if not os.path.exists(fifo_path):
+    os.mkfifo(fifo_path)
 
 while True:
     with open(fifo_path, 'r') as fifo:
