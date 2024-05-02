@@ -2,12 +2,16 @@ import signal, os, time
 
 def handler(s, f):
     print("Terminando... ")
-
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+    exit()
+    
+print(os.getpid())
 
 print(signal.getsignal(signal.SIGINT))
 
 signal.signal(signal.SIGINT, handler)
+
+#signal.pause() #espera que venga una señal
 
 print(signal.getsignal(signal.SIGINT))
 
