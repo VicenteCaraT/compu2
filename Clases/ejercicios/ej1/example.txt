@@ -1,0 +1,4 @@
+Este es un archivo de texto de prueba.
+Contiene varias líneas y palabras.
+Este archivo se usa para demostrar el programa de conteo de palabras y líneas.
+Python es un lenguaje de programación versátil.
