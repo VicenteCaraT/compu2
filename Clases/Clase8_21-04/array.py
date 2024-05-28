@@ -1,10 +1,14 @@
 """
 Array (class)
-Es un tipo de memoria compartice en el modulo multiprocessing de python, 
+Es un tipo de memoria compartida en el modulo multiprocessing de python, 
 permite crear y manipular arrays que pueden ser compartidos entre procesos.
 
 Args:
 multiprocessing.Array(typecode_or_type, size_or_initializer, *, lock=True)
+typecode_or_type determines the type of the elements of the returned array: it is either a ctypes type or a one character typecode
+then it determines the length of the array, and the array will be initially zeroed. Otherwise, size_or_initializer is a sequence which is used to initialize the array and whose length determines the length of the array.
+If lock is True (the default) then a new lock object is created to synchronize access to the value. 
+If lock is a Lock or RLock object then that will be used to synchronize access to the value.
 Array('tipo de dato':int, 'tamaño de lista o una lista':int|list).
 
 Al ser de acceso concurrente se debe aplicar una sincronización para evitar la condición de carrera.
