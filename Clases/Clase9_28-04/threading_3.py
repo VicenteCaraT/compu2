@@ -8,6 +8,11 @@ DELAY=10
 ESPERAR=True
 
 def thread_function(name):
+    """imprime cuando el hilo comienza y termina
+
+    Args:
+        name (int): nombre del hilo
+    """
     print("HILO: Iniciando hilo %s____________________________________________ mi PID es %d, Thread %d" % (name, os.getpid(), threading.get_ident()))
     print("HILO: saliendo de compras...")
     time.sleep(DELAY)

@@ -15,7 +15,12 @@ import os
 DELAY=3
 
 def thread_function(name):
-    # print("Iniciando hilo %s (%d)" % (name, threading.current_thread().ident))
+    """esta funcióm imprime el id nativo del hilo secundario, con delay de 3 seg
+
+    Args:
+        name (int): nombre del hilo
+    """
+    print("Iniciando hilo %s (%d)" % (name, threading.current_thread().ident))
     print('Native id del hilo secundario ',  threading.get_native_id())
     time.sleep(DELAY)
     print("Finalizando hilo %s, se acabó el tiempo (%s)" % (name, threading.current_thread().name))
@@ -36,7 +41,7 @@ if __name__ == "__main__":
 
     print("Programa principal, terminando ¿?")
 
-    print("\n ==> Tiene %d segundos para abrir otra terminal y ejecutar \" ps -eLf | grep %s | grep -v grep \" " % (DELAY, sys.argv[0]))
+    print("\n ==> Tiene %d segundos para abrir otra terminal y ejecutar \" ps -eLf | grep %s | grep -v grep \" " % (DELAY * 2, sys.argv[0]))
 
 
     # x.join()
