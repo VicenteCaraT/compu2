@@ -1,30 +1,21 @@
 import argparse
 from PIL import Image, ImageFilter
 import multiprocessing
-import os, sys, signal
 
 def load_and_split_image(image_path, num_splits):
-    image = Image.open(image_path)
-    width, height = image.size
-    
-    image_parts = []
-
-    if width >= height:
-        split_width = width // num_splits
-        for i in range(num_splits):
-            left = i * split_width
-            right = (i + 1) * split_width if (i + 1) * split_width <= width else width
-            part = image.crop((left, 0, right, height))
-            image_parts.append(part)
-    else:
-        split_height = height // num_splits
-        for i in range(num_splits):
-            upper = i * split_height
-            lower = (i + 1) * split_height if (i + 1) * split_height <= height else height
-            part = image.crop((0, upper, width, lower))
-            image_parts.append(part)
-    
-    return image_parts
+    img = Image.open(image_path)
+    width, height = img.size
+    parts = []
+    if num_splits > 1:
+        rows = int(num_splits ** 0.5)
+        cols = num_splits // rows
+        new_width = width // cols
+        new_height = height // rows
+        for i in range(rows):
+            for j in range(cols):
+                box = (j * new_width, i * new_height, (j + 1) * new_width, (i + 1) * new_height)
+                parts.append(img.crop(box))
+    return parts
 
 def apply_filter(image_part, filter_type):
     if filter_type == "blur":
@@ -36,12 +27,56 @@ def apply_filter(image_part, filter_type):
     else:
         return image_part
 
-#crear función que cree los procesos y le aplique filtro a cada imagen
-
-#crear función que maneje la señal de interrupción
-
-
+def process_image(image_parts, filter_type):
+    num_parts = len(image_parts)
+    processes = []
+    pipes = []
+    lock = multiprocessing.Lock()
     
+    for i in range(num_parts):
+        parent_pipe, child_pipe = multiprocessing.Pipe()
+        pipes.append(parent_pipe)
+        
+        process = multiprocessing.Process(
+            target=process_image_parts,
+            args=(image_parts[i], filter_type, child_pipe, lock)
+        )
+        processes.append(process)
+        process.start()
+        child_pipe.close()
+        
+    filtered_parts = []
+    for parent_pipe in pipes:
+        filtered_part = parent_pipe.recv()
+        filtered_parts.append(filtered_part)
+        print("Received filtered part from pipe")
+    
+    for process in processes:
+        process.join()
+        print("Process joined")
+    
+    for parent_pipe in pipes:
+        parent_pipe.close()
+        print("Parent pipe closed")
+    
+    return filtered_parts
+
+def process_image_parts(image_part, filter_type, pipe_conn, lock):
+    lock.acquire()
+    try:
+        print("Starting filter application")
+        filtered_part = apply_filter(image_part, filter_type)
+        print("Filter applied")
+        
+        pipe_conn.send(filtered_part)
+        print("Filtered part sent")
+    finally:
+        lock.release()
+        print("Lock released")
+    
+    pipe_conn.close()
+    print("Pipe connection closed")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Procesamiento paralelo de imágenes")
     parser.add_argument("image_path", type=str, help="Ruta de la imagen")
@@ -58,6 +93,7 @@ if __name__ == "__main__":
     
     image_parts = load_and_split_image(args.image_path, num_splits)
     
-    for idx, part in enumerate(image_parts):
-        filtered_part = apply_filter(part, args.filter)
-        filtered_part.show(f"parte_{idx + 1}_filtrada.jpg")
+    filtered_parts = process_image(image_parts, args.filter)
+    
+    for idx, part in enumerate(filtered_parts):
+        part.show(f"parte_{idx + 1}_filtrada.jpg")
