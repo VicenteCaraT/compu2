@@ -3,6 +3,7 @@ from PIL import Image, ImageFilter
 import multiprocessing
 import io
 import time
+import signal
 
 def load_and_split_image(image_path, num_splits, overlap=10):
     img = Image.open(image_path)
@@ -47,15 +48,13 @@ def process_image(image_parts, filter_type):
     num_parts = len(image_parts)
     part_size = 1024 * 1024 
     shared_array = multiprocessing.Array('c', num_parts * part_size)
-
     processes = []
     pipes = []
     lock = multiprocessing.Lock()
-
+    
     for i in range(num_parts):
         parent_pipe, child_pipe = multiprocessing.Pipe()
         pipes.append(parent_pipe)
-
         process = multiprocessing.Process(
             target=process_image_parts,
             args=(image_parts[i][0], filter_type, child_pipe, lock, shared_array, i, part_size)
@@ -63,16 +62,13 @@ def process_image(image_parts, filter_type):
         processes.append(process)
         process.start()
         child_pipe.close()
-
     for parent_pipe in pipes:
         parent_pipe.recv()
-
     for process in processes:
         process.join()
-
     for parent_pipe in pipes:
         parent_pipe.close()
-
+        
     filtered_parts = [
         (Image.open(io.BytesIO(bytes(shared_array[i * part_size: (i + 1) * part_size]))), image_parts[i][1])
         for i in range(num_parts)
@@ -81,27 +77,31 @@ def process_image(image_parts, filter_type):
     return filtered_parts
 
 def process_image_parts(image_part, filter_type, pipe_conn, lock, shared_array, index, part_size):
-    lock.acquire()
     try:
-        filtered_part = apply_filter(image_part, filter_type)
-        part_bytes = io.BytesIO()
-        filtered_part.save(part_bytes, format='PNG')
-        part_data = part_bytes.getvalue()
-        
-        if len(part_data) < part_size:
-            part_data += b'\x00' * (part_size - len(part_data))
+        lock.acquire()
+        try:
+            filtered_part = apply_filter(image_part, filter_type)
+            part_bytes = io.BytesIO()
+            filtered_part.save(part_bytes, format='PNG')
+            part_data = part_bytes.getvalue()
 
-        start_idx = index * part_size
-        end_idx = start_idx + part_size
-        shared_array[start_idx:end_idx] = part_data
+            if len(part_data) < part_size:
+                part_data += b'\x00' * (part_size - len(part_data))
 
-        pipe_conn.send(f"Part {index} saved to shared memory")
+            start_idx = index * part_size
+            end_idx = start_idx + part_size
+            shared_array[start_idx:end_idx] = part_data
+
+            pipe_conn.send(f"Part {index} saved to shared memory")
+        finally:
+            lock.release() 
+    except KeyboardInterrupt:
+        pass #silencia los logs de error de los procesos hijos
     finally:
-        lock.release()
-    pipe_conn.close()
+        pipe_conn.close()
 
-def signal_handler():
-    pass
+def signal_handler(s, f):
+    raise KeyboardInterrupt
 
 def combine_image(filtered_parts, image_size, overlap=10):
     width, height = image_size
@@ -121,20 +121,30 @@ def combine_image(filtered_parts, image_size, overlap=10):
     new_image.show()
     return new_image
 
-if __name__ == "__main__":
+def main():
+    signal.signal(signal.SIGINT, signal_handler)
+    
     parser = argparse.ArgumentParser(description="Procesamiento paralelo de imágenes")
     parser.add_argument("image_path", type=str, help="Ruta de la imagen")
     parser.add_argument("-d", "--division", type=int, help="Número de divisiones para dividir la imagen (activa la división)")
     parser.add_argument("-f", "--filter", type=str, help="Aplica el tipo de filtro ingresado")
-
     args = parser.parse_args()
-
+    
     if args.division:
         num_splits = args.division
     else:
         num_cores = multiprocessing.cpu_count()
         num_splits = num_cores
-
-    image_parts, image_size, grid_size = load_and_split_image(args.image_path, num_splits)
-    filtered_parts = process_image(image_parts, args.filter)
-    combined_image = combine_image(filtered_parts, image_size)
+    
+    try:
+        # Ajusta para recibir los tres valores que devuelve la función
+        image_parts, image_size, grid_size = load_and_split_image(args.image_path, num_splits)
+        filtered_parts = process_image(image_parts, args.filter)
+        combined_image = combine_image(filtered_parts, image_size)
+        combined_image.save("imagen_procesada.png")
+    except KeyboardInterrupt:
+        print("\nProceso interrumpido por el usuario. Saliendo...")
+        
+        
+if __name__ == "__main__":
+    main()
