@@ -2,26 +2,34 @@ import argparse
 from PIL import Image, ImageFilter
 import multiprocessing
 import io
+import time
 
 def load_and_split_image(image_path, num_splits, overlap=10):
     img = Image.open(image_path)
     width, height = img.size
     parts = []
-    if num_splits > 1:
-        rows = int(num_splits ** 0.5)
-        cols = num_splits // rows
-        new_width = width // cols
-        new_height = height // rows
-        for i in range(rows):
-            for j in range(cols):
-                box = (
-                    max(j * new_width - overlap, 0),
-                    max(i * new_height - overlap, 0),
-                    min((j + 1) * new_width + overlap, width),
-                    min((i + 1) * new_height + overlap, height)
-                )
-                parts.append((img.crop(box), box))
-    return parts, img.size, (rows, cols)
+    if width > height:  #dividir verticalmente si la imagen es más ancha
+        new_width = width // num_splits
+        for i in range(num_splits):
+            box = (
+                max(i * new_width - overlap, 0),
+                0,
+                min((i + 1) * new_width + overlap, width),
+                height
+            )
+            parts.append((img.crop(box), box))
+    else:  #dividir horizontalmente si la imagen es más alta
+        new_height = height // num_splits
+        for i in range(num_splits):
+            box = (
+                0,
+                max(i * new_height - overlap, 0),
+                width,
+                min((i + 1) * new_height + overlap, height)
+            )
+            parts.append((img.crop(box), box))
+
+    return parts, img.size, num_splits
 
 def apply_filter(image_part, filter_type):
     if filter_type == "blur":
@@ -95,23 +103,21 @@ def process_image_parts(image_part, filter_type, pipe_conn, lock, shared_array, 
 def signal_handler():
     pass
 
-def combine_image(filtered_parts, image_size, grid_size, overlap=10):
+def combine_image(filtered_parts, image_size, overlap=10):
     width, height = image_size
-    rows, cols = grid_size
     new_image = Image.new('RGB', (width, height))
-
-    for idx, (part, box) in enumerate(filtered_parts):
-        row = idx // cols
-        col = idx % cols
+    for part, box in filtered_parts:
+        #ajustar el tamaño del área de recorte para eliminar el solapamiento
         crop_box = (
-            overlap if col > 0 else 0,
-            overlap if row > 0 else 0,
-            part.width - (overlap if col < cols - 1 else 0),
-            part.height - (overlap if row < rows - 1 else 0)
+            overlap if box[0] > 0 else 0, 
+            overlap if box[1] > 0 else 0, 
+            part.width - (overlap if box[2] < width else 0),  
+            part.height - (overlap if box[3] < height else 0) 
         )
         part = part.crop(crop_box)
-        new_image.paste(part, (box[0] + crop_box[0], box[1] + crop_box[1]))
-
+        #calcular la posición donde se pegará la parte recortada
+        paste_position = (box[0] + crop_box[0], box[1] + crop_box[1])
+        new_image.paste(part, paste_position)
     new_image.show()
     return new_image
 
@@ -131,4 +137,4 @@ if __name__ == "__main__":
 
     image_parts, image_size, grid_size = load_and_split_image(args.image_path, num_splits)
     filtered_parts = process_image(image_parts, args.filter)
-    combined_image = combine_image(filtered_parts, image_size, grid_size)
+    combined_image = combine_image(filtered_parts, image_size)
