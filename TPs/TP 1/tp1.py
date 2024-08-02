@@ -6,6 +6,18 @@ import time
 import signal
 
 def load_and_split_image(image_path, num_splits, overlap=10):
+    """Carga una imágen y la divide en partes iguales según el número de divisiones especificadas por argumento
+
+    Args:
+        image_path (str): ruta de la imagen
+        num_splits (int): Numero de divisiónes que se aplicarán a la imagen
+        overlap (int): Solapamiento entre partes adyacentes (ya que sino se ven las líneas de división en la imágen final). Defaults to 10 pixeles.
+
+    Returns:
+        parts (list): Una lista de tuplas que contiene la imágen recortada
+        img.size (tuple): Una tupla que contiene el alto y el ancho de la imágen original
+        num_splits (int): Numero de disiviónes realizado
+    """
     img = Image.open(image_path)
     width, height = img.size
     parts = []
@@ -33,6 +45,15 @@ def load_and_split_image(image_path, num_splits, overlap=10):
     return parts, img.size, num_splits
 
 def apply_filter(image_part, filter_type):
+    """Aplica el filtro especificado por argumento
+
+    Args:
+        image_part (Image): Parte de la imágen a la cual se le va a aplicar el filtro
+        filter_type (str): Tipo de filtro a aplicar
+
+    Returns:
+        image: La parte de la imágen con el filtro aplicado, si no se especifica ninguan filtro se devuelve sin filtro
+    """
     if filter_type == "blur":
         return image_part.filter(ImageFilter.BLUR)
     elif filter_type == "contour":
@@ -45,67 +66,108 @@ def apply_filter(image_part, filter_type):
         return image_part
 
 def process_image(image_parts, filter_type):
-    num_parts = len(image_parts)
-    part_size = 1024 * 1024 
-    shared_array = multiprocessing.Array('c', num_parts * part_size)
-    processes = []
-    pipes = []
-    lock = multiprocessing.Lock()
+    """Procesa las partes de una imagen en paralelo
     
+    Args:
+        image_parts (list/tuple): Lista de tuplas donde cada tuple contiene los datos de una parte de la imagen (bytes)
+        filter_type (str): Tipo de filtro a aplicar a cada parte de la imagen
+
+    Returns:
+        filtered_parts: Lista de tuplas donde estan contenidas las partes de la imagen ya procesadas
+    """
+    num_parts = len(image_parts)
+    part_size = 1024 * 1024 #1mb por cada parte
+    shared_array = multiprocessing.Array('c', num_parts * part_size)
+    processes = [] #lista para almacenar los procesos creados
+    pipes = [] #lista para almacenar los pipes de comunucación entre procesos
+    lock = multiprocessing.Lock() #lock para la sincronización entre procesos
+    
+    #se itera por cada parte de la imagen
     for i in range(num_parts):
-        parent_pipe, child_pipe = multiprocessing.Pipe()
-        pipes.append(parent_pipe)
+        parent_pipe, child_pipe = multiprocessing.Pipe() #se crean los pipes para cada proceso
+        pipes.append(parent_pipe) #se almacena el pipe del padre a la lista
+        #se crean los procesos para procesar las partes de la imagen
         process = multiprocessing.Process(
-            target=process_image_parts,
-            args=(image_parts[i][0], filter_type, child_pipe, lock, shared_array, i, part_size)
+            target=process_image_parts, #función objetivo que realiza cada proceso
+            args=(image_parts[i][0], filter_type, child_pipe, lock, shared_array, i, part_size) #se para la parte de la imagen a procesar, el filtro a aplicar, el pipe de comunicación del hijo, el lock para la sicronización, la memoraia compartida, el numero de iteraciones, el tamaño de cada parte
         )
-        processes.append(process)
-        process.start()
-        child_pipe.close()
+        processes.append(process) #se almacena el proceso an la lista
+        process.start() #se inicia el proceso
+        child_pipe.close() #cierra sel extremo del pipe en el proceso hijo
+    #espera a que todos los procesos terminen
     for parent_pipe in pipes:
-        parent_pipe.recv()
+        parent_pipe.recv() #se recive la señal de finalización 
+    #espera a que todos los procesos terminen
     for process in processes:
-        process.join()
+        process.join() #se terminan los procesos
+    #cierra todos los pipes del padre
     for parent_pipe in pipes:
         parent_pipe.close()
         
+    #reconstruye las partes procesadas a partir del array compartido
     filtered_parts = [
         (Image.open(io.BytesIO(bytes(shared_array[i * part_size: (i + 1) * part_size]))), image_parts[i][1])
         for i in range(num_parts)
     ]
 
-    return filtered_parts
+    return filtered_parts #devuelve la lista de partes procesadas
 
 def process_image_parts(image_part, filter_type, pipe_conn, lock, shared_array, index, part_size):
-    try:
-        lock.acquire()
-        try:
-            filtered_part = apply_filter(image_part, filter_type)
-            part_bytes = io.BytesIO()
-            filtered_part.save(part_bytes, format='PNG')
-            part_data = part_bytes.getvalue()
+    """
+    Procesa una parte de la imagen aplicando un filtro y guarda el resultado en memoria compartida.
 
+    Args:
+        image_part (bytes): Parte de la imagen en formato de bytes a procesar
+        filter_type (str): Tipo de filtro a aplicar a la imagen
+        pipe_conn (multiprocessing.PipeConnection): Conexión de pipe para enviar mensajes al proceso principal
+        lock (multiprocessing.Lock): Lock para asegurar la sincronización 
+        shared_array (multiprocessing.Array): Array compartido en memoria para almacenar las partes procesadas
+        index (int): Índice de la parte de la imagen en la lista de partes
+        part_size (int): Tamaño en bytes de cada parte de la imagen.
+
+    """
+    try:
+        lock.acquire() #se adquiere el lock
+        try:
+            filtered_part = apply_filter(image_part, filter_type) #se le aplica el filtro a la parte
+            part_bytes = io.BytesIO() #se crea un objeto BytesIO para almacenar la imagen filtrada
+            filtered_part.save(part_bytes, format='PNG') #guarda la imagen filtrada en el objeto con formato png
+            part_data = part_bytes.getvalue() #se obtienen los datos de la imagen filtrada como bytes
+            
+            #asegurar que la longitud de part_data sea igual a part_size rellenando con bytes nulos si es necesario
             if len(part_data) < part_size:
                 part_data += b'\x00' * (part_size - len(part_data))
-
+        
+            #se calcula el índice de inicio y fin para almacenar la parte en el array compartido
             start_idx = index * part_size
             end_idx = start_idx + part_size
-            shared_array[start_idx:end_idx] = part_data
+            shared_array[start_idx:end_idx] = part_data #se almacena la parte procesada en la memoria compartida
 
             pipe_conn.send(f"Part {index} saved to shared memory")
         finally:
-            lock.release() 
+            lock.release() #se libera el locka para el siguiente proceso
     except KeyboardInterrupt:
         pass #silencia los logs de error de los procesos hijos
     finally:
-        pipe_conn.close()
+        pipe_conn.close() #se cierra la comunicación
 
 def signal_handler(s, f):
     raise KeyboardInterrupt
 
 def combine_image(filtered_parts, image_size, overlap=10):
-    width, height = image_size
-    new_image = Image.new('RGB', (width, height))
+    """
+    Combina partes filtradas de una imagen en una imagen completa, ajustando el solapamiento entre partes.
+
+    Args:
+        filtered_parts (list/tuple): Lista de tuplas donde cada tupla contiene una parte filtrada 
+        image_size (tuple): Tamaño de la imagen final en píxeles (ancho, alto).
+        overlap (int): Cantidad de solapamiento en píxeles entre las partes de la imagen. Default es 10.
+
+    Returns:
+        Image: Imagen combinada final
+    """
+    width, height = image_size #se obtienen las dimemsiones de la imagen final
+    new_image = Image.new('RGB', (width, height)) #se crea una nueva imagen con las dimenciones en blanco
     for part, box in filtered_parts:
         #ajustar el tamaño del área de recorte para eliminar el solapamiento
         crop_box = (
@@ -114,12 +176,12 @@ def combine_image(filtered_parts, image_size, overlap=10):
             part.width - (overlap if box[2] < width else 0),  
             part.height - (overlap if box[3] < height else 0) 
         )
-        part = part.crop(crop_box)
+        part = part.crop(crop_box) #se recortar la parte de la imagen según la caja de recorte
         #calcular la posición donde se pegará la parte recortada
         paste_position = (box[0] + crop_box[0], box[1] + crop_box[1])
-        new_image.paste(part, paste_position)
-    new_image.show()
-    return new_image
+        new_image.paste(part, paste_position) #se pega la parte en la posicion calculada
+    new_image.show() #muestra la imagen
+    return new_image #devuelve la imagen combinada
 
 def main():
     signal.signal(signal.SIGINT, signal_handler)
@@ -137,7 +199,6 @@ def main():
         num_splits = num_cores
     
     try:
-        # Ajusta para recibir los tres valores que devuelve la función
         image_parts, image_size, grid_size = load_and_split_image(args.image_path, num_splits)
         filtered_parts = process_image(image_parts, args.filter)
         combined_image = combine_image(filtered_parts, image_size)
