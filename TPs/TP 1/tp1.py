@@ -16,7 +16,6 @@ def load_and_split_image(image_path, num_splits, overlap=10):
     Returns:
         parts (list): Una lista de tuplas que contiene la imágen recortada
         img.size (tuple): Una tupla que contiene el alto y el ancho de la imágen original
-        num_splits (int): Numero de disiviónes realizado
     """
     img = Image.open(image_path)
     width, height = img.size
@@ -42,7 +41,7 @@ def load_and_split_image(image_path, num_splits, overlap=10):
             )
             parts.append((img.crop(box), box))
 
-    return parts, img.size, num_splits
+    return parts, img.size
 
 def apply_filter(image_part, filter_type):
     """Aplica el filtro especificado por argumento
@@ -199,12 +198,13 @@ def main():
         num_splits = num_cores
     
     try:
-        image_parts, image_size, grid_size = load_and_split_image(args.image_path, num_splits)
+        image_parts, image_size = load_and_split_image(args.image_path, num_splits)
         filtered_parts = process_image(image_parts, args.filter)
         combined_image = combine_image(filtered_parts, image_size)
         combined_image.save("imagen_procesada.png")
     except KeyboardInterrupt:
-        print("\nProceso interrumpido por el usuario. Saliendo...")
+        print("\nProceso interrumpido por el usuario. Terminando procesos...")
+        time.sleep(2)
         
         
 if __name__ == "__main__":
