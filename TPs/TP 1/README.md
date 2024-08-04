@@ -27,3 +27,4 @@ python3 tp1.py test_img2.jpg -d 10 -f emboss
 ```bash
 pip3 install pillow
 ```
+## Author: Vicente Cara Tapia
