@@ -95,7 +95,7 @@ def process_image(image_parts, filter_type):
         child_pipe.close() #cierra sel extremo del pipe en el proceso hijo
     #espera a que todos los procesos terminen
     for parent_pipe in pipes:
-        parent_pipe.recv() #se recive la señal de finalización 
+        parent_pipe.recv() #se recive el mensaje de que la parte fue guardada en la memoria
     #espera a que todos los procesos terminen
     for process in processes:
         process.join() #se terminan los procesos
@@ -142,7 +142,7 @@ def process_image_parts(image_part, filter_type, pipe_conn, lock, shared_array, 
             end_idx = start_idx + part_size
             shared_array[start_idx:end_idx] = part_data #se almacena la parte procesada en la memoria compartida
 
-            pipe_conn.send(f"Part {index} saved to shared memory")
+            pipe_conn.send(f"Part {index} saved")
         finally:
             lock.release() #se libera el locka para el siguiente proceso
     except KeyboardInterrupt:
