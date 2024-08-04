@@ -122,7 +122,7 @@ def process_image_parts(image_part, filter_type, pipe_conn, lock, shared_array, 
         lock (multiprocessing.Lock): Lock para asegurar la sincronización 
         shared_array (multiprocessing.Array): Array compartido en memoria para almacenar las partes procesadas
         index (int): Índice de la parte de la imagen en la lista de partes
-        part_size (int): Tamaño en bytes de cada parte de la imagen.
+        part_size (int): Tamaño en bytes de cada parte de la imagen
 
     """
     try:
