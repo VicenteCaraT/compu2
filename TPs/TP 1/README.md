@@ -1,28 +1,28 @@
-# Trabajo Práctico Nº 1: Procesamiento de Imágenes en Paralelo
+# Practical Assignment No. 1: Parallel Image Processing
 
-## ¿Cómo Funciona la aplicación?
-- La aplicación permite el proceso paralelo de imagenes aplicando distintos filtros. Para que la aplicación funciones correctamente, es necesario pasar todos los parámetros mediante argumentos en la línea de comandos. 
+## How the Application Works
+- The application enables the parallel processing of images by applying various filters. To function correctly, all parameters must be passed as arguments in the command line.
 
-## Uso de la Aplicación
+## Usage of the Application
 ```bash
-python3 tp1.py <ruta_de_la_imagen> -d <número_de_divisiones (opcional)> -f <tipo_de_filtro>
+python3 tp1.py <image_path> -d <number_of_divisions (optional)> -f <filter_type>
 ```
 
-## Argumentos
-- `<ruta_de_la_imagen>`(str): Es la ruta donde se encuentra la imagen a procesar.
-- `-d <número_de_divisiones>`(int): (Opcional) Indica en cuántas partes se dividirá la imagen para su procesamiento en paralelo. Es un argumento opcional, por lo que si no se especifica una división, la imagen se dividirá en función del número de núcleos con los que cuente tu procesador.
-- `-f <tipo_de_filtro>`(str): Se tiene que especificar el tipo de filtro que se aplicará a la imagen. Filtros disponibles:
+## Arguments
+- `<image_path>`: The path to the image that you want to process.
+- `-d <number_of_divisions>`: (Optional) Specifies how many parts the image will be divided into for parallel processing. If not specified, the image will be divided based on the number of cores available on your processor.
+- `-f <filter_type>`: Specifies the type of filter to be applied to the image. Available filters:
     - `blur`
     - `contour`
     - `edge`
     - `emboss`
 
-## Ejemplo de uso
+## Example of Usage
 ```bash
 python3 tp1.py test_img2.jpg -d 10 -f emboss
 ```
 
-## Librerías Necesarias
+## Required Libraries
 - Pillow
 ```bash
 pip3 install pillow
