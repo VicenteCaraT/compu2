@@ -74,41 +74,40 @@ def process_image(image_parts, filter_type):
     Returns:
         filtered_parts: Lista de tuplas donde estan contenidas las partes de la imagen ya procesadas
     """
-    num_parts = len(image_parts)
-    part_size = 1024 * 1024 #1mb por cada parte
-    shared_array = multiprocessing.Array('c', num_parts * part_size)
+    #se calcula el tamaño total de la memoria compartida en base al tamaño de las imagenes (ancho*alto*canales)
+    _, _, part_width, part_height = image_parts[0][1]  #desempaqueta los valores que necesitas
+    part_size = part_width * part_height * 3  #3 canales RGB
+    shared_array = multiprocessing.Array('c', len(image_parts) * part_size) #creación de la memoria compartida
     processes = [] #lista para almacenar los procesos creados
-    pipes = [] #lista para almacenar los pipes de comunucación entre procesos
+    pipes = [] #lista para almacenar los pipes de comunicación entre procesos
     lock = multiprocessing.Lock() #lock para la sincronización entre procesos
     
     #se itera por cada parte de la imagen
-    for i in range(num_parts):
-        parent_pipe, child_pipe = multiprocessing.Pipe() #se crean los pipes para cada proceso
-        pipes.append(parent_pipe) #se almacena el pipe del padre a la lista
+    for i in range(len(image_parts)):
+        parent_pipe, child_pipe = multiprocessing.Pipe() # se crean los pipes de comunicación para cada proceso
+        pipes.append(parent_pipe) #se almacenan los pipes creados en una lista
         #se crean los procesos para procesar las partes de la imagen
         process = multiprocessing.Process(
             target=process_image_parts, #función objetivo que realiza cada proceso
-            args=(image_parts[i][0], filter_type, child_pipe, lock, shared_array, i, part_size) #se para la parte de la imagen a procesar, el filtro a aplicar, el pipe de comunicación del hijo, el lock para la sicronización, la memoraia compartida, el numero de iteraciones, el tamaño de cada parte
+            args=(image_parts[i][0], filter_type, child_pipe, lock, shared_array, i, part_size)
         )
-        processes.append(process) #se almacena el proceso an la lista
-        process.start() #se inicia el proceso
-        child_pipe.close() #cierra sel extremo del pipe en el proceso hijo
+        processes.append(process) #se almacena el proceso en la lista
+        process.start() #se inician los procesos
+        child_pipe.close() #se cierra el extremo del pipe en el proceso hijo
     #espera a que todos los procesos terminen
     for parent_pipe in pipes:
-        parent_pipe.recv() #se recive el mensaje de que la parte fue guardada en la memoria
-    #espera a que todos los procesos terminen
+        parent_pipe.recv() #se recibe el mensaje de que la parte fue guardada en la memoria
+
     for process in processes:
         process.join() #se terminan los procesos
-    #cierra todos los pipes del padre
+
     for parent_pipe in pipes:
-        parent_pipe.close()
-        
+        parent_pipe.close() #se cierran todos los pipes del padre
     #reconstruye las partes procesadas a partir del array compartido
     filtered_parts = [
         (Image.open(io.BytesIO(bytes(shared_array[i * part_size: (i + 1) * part_size]))), image_parts[i][1])
-        for i in range(num_parts)
+        for i in range(len(image_parts))
     ]
-
     return filtered_parts #devuelve la lista de partes procesadas
 
 def process_image_parts(image_part, filter_type, pipe_conn, lock, shared_array, index, part_size):
