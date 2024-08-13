@@ -1,0 +1,3 @@
+crear cliente/servido implementado en python
+- ver la comunicación entre computadoras diferentes
+- ver la comunicacion entre diferentes cliente/servidor
