@@ -1,0 +1,4 @@
+- probar los códigos de servidores con multiprocessing y multithreading
+- hacer un cliente en el que puedas ingresar variables por argumento como poder 
+configurar la direccion a la cual conectarse (ip, puerto), ademas de implementar 
+una señal para cortar la comunicacion
