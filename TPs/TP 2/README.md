@@ -6,10 +6,10 @@ This application demonstrates an image processing system using an asynchronous H
 
 ## How the Application Works
 
-1. **Server A** (AsyncServer) receives image processing requests via HTTP.
-2. Each image is sent to **Server B** using a socket connection for scaling operations.
-3. **Server B** processes the image using multiprocessing to ensure efficient resource utilization.
-4. The processed image is returned to Server A, which updates the task status.
+1. **Server A** (AsyncServer) receives image processing requests via HTTP and scale factor.
+2. Each image is sent to **Server B** using a socket connection.
+3. **Server B** processes the image using multiprocessing.
+4. The processed image is returned to Server A
 5. Users can check the status of their image processing task using the unique task ID provided upon upload.
 
 ## Usage Instructions
