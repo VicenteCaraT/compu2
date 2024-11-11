@@ -46,11 +46,7 @@ async def handle_client(request):
     except Exception as e:
         print(f"Error al manejar la solicitud: {str(e)}")
         return web.Response(text=f"Error al manejar la solicitud: {str(e)}", status=500)
-
-import asyncio
-import struct
-import datetime
-
+    
 async def process_img(task_id, image_data, scale_factor):
     """
     Procesa la imagen conectándose al servidor B para su procesamiento utilizando asyncio streams.
