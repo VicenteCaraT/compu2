@@ -58,7 +58,7 @@ python3 main.py -i ::1 -p 5454
 To process an image, use a `POST` request to upload the image along with the desired scale factor:
 
 ```bash
-curl -X POST http://[::1]:5454/upload -F "image=@<image_path>" -F "scale_factor=<scale_factor (e.g., 0.1 or 0.5)>"
+curl -X POST http://[::1]:5454/upload -F "image=@<image_path>" -F "scale_factor=<scale_factor=(e.g., 0.1 or 0.5)>"
 ```
 
 - Replace `<image_path>` with the path to the image you want to process.
