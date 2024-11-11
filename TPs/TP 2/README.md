@@ -1,5 +1,15 @@
 # Practical Assignment No. 2: Image Processing with AsyncServer (HTTP) and SocketServer + Multiprocessing
 
+## Requirements
+`Pillow`
+
+`aiohttp`
+
+Make sure to install requirements.txt:
+```bash
+pip3 install -r requirements.txt
+```
+
 ## Overview
 
 This application demonstrates an image processing system using an asynchronous HTTP server (Server A) and a Socket server (Server B) with multiprocessing capabilities. It allows users to upload images for processing, applying a specified scale factor, and then retrieve the results using unique task identifiers.
